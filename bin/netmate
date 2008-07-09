@@ -7,11 +7,18 @@ if ARGV[0].nil?
   exit 
 end
 
-args = ARGV.shift
-user = args.include?("@") ? args.split("@").shift.split(":").shift : ENV["USER"]
-host = (args = args.split(":")).first.split("@").pop
-fullpath = args.pop.split("/")
-filename = fullpath.pop
-path = fullpath.join("/")
+$config = {}
+args = ARGV[0].dup
+if args.include?("@")
+  u_p = args.slice!(/^.+@/).delete('@').split(":")
+  $config[:user] = u_p[0]
+  $config[:pass] = u_p[1] || ''
+else
+  $config[:user] = ENV["USER"]
+  $config[:pass] = ''
+end
 
-Netmate.new(:user => user, :host => host, :path => path).run
+$config[:host] = args.slice!(/^.+:/).delete(":")
+$config[:path] = args.split('.').last == '/' ? args : args + '/'
+
+Netmate::Shell.new.run
