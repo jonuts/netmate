@@ -21,18 +21,23 @@ module Netmate
           exit
         elsif c == 'mate'
           @open << (key = generate_key)
-          file = File.new(a,key)
+          file = File.new($config[:path], a, key)
           file.open
         elsif c == 'save'
           (file = File.find_by(:filename => a)).save
           @open.delete file.key
         elsif c == 'show'
-          @open.each do |file|
-            print File.find_by(:filename => file).filename, file == @open.last ? '.' : ', '
+          if @open.empty?
+            puts "nothing to see here people."
+          else
+            @open.each do |file|
+              print File.find_by(:key => file).filename, file == @open.last ? "\n" : ', '
+            end
           end
         else
           puts help
         end
+
       end
     end
 
@@ -67,22 +72,38 @@ module Netmate
   end
   
   class File
-    def initialize(filename, key)
-      @filetype, @filename = filename.slice(/\..+$/), filename
-      @key = key
+    def initialize(path, filename, key)
+      @filetype = filename.slice(/\..+$/)
+      @filename = filename
+      @path     = path
+      @key      = key
+      $cache << self
+    end
+    
+    attr_reader :filename, :key
+    
+    def self.find_by(type = {})
+      typek = type.keys.first
+      $cache.find { |e| eval("e.#{typek}") == type[typek] }
     end
     
     def open
-      download @filename
+      open_connection :download
       %x(mate /tmp/#{@key + @filetype})
     end
     
+    def save
+      open_connection :upload
+    end
+    
   protected
-    def download(file)
+    def open_connection(method)
       Net::SFTP.start($config[:host], $config[:user], :password => $config[:pass]) do |sftp|
-        sftp.download!($config[:path]+@filename, "/tmp/#{@key + @filetype}")
+        sftp.download!(@path + @filename, "/tmp/#{@key + @filetype}") if method == :download
+        sftp.upload!("/tmp/#{@key + @filetype}", @path + @filename) if method == :upload
       end
     end
+    
   end
   
 end
