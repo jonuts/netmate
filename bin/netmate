@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby -wKU
+
+require File.dirname(__FILE__) + '/../lib/netmate'
+
+if ARGV[0].nil?
+  puts "feh" 
+  exit 
+end
+
+args = ARGV.shift
+user = args.include?("@") ? args.split("@").shift.split(":").shift : ENV["USER"]
+host = (args = args.split(":")).first.split("@").pop
+fullpath = args.pop.split("/")
+filename = fullpath.pop
+path = fullpath.join("/")
+
+Netmate.new(:user => user, :host => host, :path => path).run
