@@ -10,10 +10,10 @@ To get to the NetMate shell, run:
 If you leave off the user/pass (for example if you use an rsa key for authentication), netmate will use your local username.
 
 From the shell you can then run
->> mate file.rb
+>&gt; mate file.rb
 
 When you are done editing, you then need to upload the file back up to your server:
->> save file.rb
+>&gt; save file.rb
 
 To see a list of open files to be saved or forgotten:
->> show
+>&gt; show
