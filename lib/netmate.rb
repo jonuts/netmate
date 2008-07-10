@@ -1,6 +1,6 @@
 require "readline"
 require "rubygems"
-require "net/scp"
+require "net/sftp"
 
 module Netmate
   
@@ -85,7 +85,7 @@ module Netmate
     
   protected
     def open_connection(method)
-      Net::SCP.start($config[:host], $config[:user], :password => $config[:pass]) do |sftp|
+      Net::SFTP.start($config[:host], $config[:user], :password => $config[:pass]) do |sftp|
         sftp.download!(@path + @full_file_name, "/tmp/#{@key + @filename}") if method == :download
         sftp.upload!("/tmp/#{@key + @filename}", @path + @full_file_name) if method == :upload
       end
