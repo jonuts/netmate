@@ -16,31 +16,37 @@ module Netmate
         Readline::HISTORY.push cmd.join(" ")
         c,a = cmd.shift, cmd.join(" ") 
       
-        if c == 'exit'
-          puts 'Goodbye.'
-          exit
-        elsif c == 'mate'
-          @open << (key = generate_key)
-          file = File.new($config[:path], a, key)
-          file.open
-        elsif c == 'save'
-          (file = File.find_by(:filename => a)).save
-          @open.delete file.key
-        elsif c == 'show'
-          if @open.empty?
-            puts "nothing to see here people."
-          else
-            @open.each do |file|
-              print File.find_by(:key => file).filename, file == @open.last ? "\n" : ', '
+        begin
+          if c == 'exit'
+            puts 'Goodbye.'
+            exit
+          elsif c == 'mate'
+            @open << (key = generate_key)
+            file = File.new($config[:path], a, key)
+            file.open
+          elsif c == 'save'
+            (file = File.find_by(:filename => a)).save
+            @open.delete file.key
+          elsif c == 'show'
+            if @open.empty?
+              puts "nothing to see here people."
+            else
+              @open.each do |file|
+                print File.find_by(:key => file).filename, file == @open.last ? "\n" : ', '
+              end
             end
+          else
+            puts help
           end
-        else
-          puts help
+        rescue => e
+          puts "#{e.class}: #{e.message}"
+          next
         end
-
       end
     end
-
+    
+  protected
+    # Generate a random key so we can find the file later
     def generate_key
       10.times { (@a ||= []) << num; @a << letter }
       @a.sort_by { rand }.join
@@ -58,17 +64,6 @@ module Netmate
       "Help me plox"
     end
     
-    # def edit(file)
-    #   download file
-    #   %x(mate /tmp/feh.html)
-    # end
-      
-    # def download(file)
-    #   Net::SFTP.start(@host, @user, :password => @pass) do |sftp|
-    #     sftp.download!(file, "/tmp/feh.html")
-    #   end
-    # end
-  
   end
   
   class File
