@@ -22,8 +22,7 @@ module Netmate
             exit
           elsif c == 'mate'
             @open << (key = generate_key)
-            file = File.new($config[:path], a, key)
-            file.open
+            File.new($config[:path], a, key).open
           elsif c == 'save'
             (file = File.find_by(:filename => a)).save
             @open.delete file.key
@@ -48,16 +47,7 @@ module Netmate
   protected
     # Generate a random key so we can find the file later
     def generate_key
-      10.times { (@a ||= []) << num; @a << letter }
-      @a.sort_by { rand }.join
-    end
-    
-    def num
-      rand 10
-    end
-    
-    def letter
-      ('a'..'z').to_a[rand(26)]
+      Time.now.strftime("%Y%m%d%H%M%S_")
     end
   
     def help
@@ -69,7 +59,9 @@ module Netmate
   class File
     def initialize(path, filename, key)
       @filetype = filename.slice(/\..+$/)
-      @filename = filename
+      @full_file_name = filename
+      filename = filename.split('/').last
+      @filename = get_filename(filename)
       @path     = path
       @key      = key
       $cache << self
@@ -84,7 +76,7 @@ module Netmate
     
     def open
       open_connection :download
-      %x(mate /tmp/#{@key + @filetype})
+      %x(mate /tmp/#{@key + @filename})
     end
     
     def save
@@ -94,8 +86,18 @@ module Netmate
   protected
     def open_connection(method)
       Net::SFTP.start($config[:host], $config[:user], :password => $config[:pass]) do |sftp|
-        sftp.download!(@path + @filename, "/tmp/#{@key + @filetype}") if method == :download
-        sftp.upload!("/tmp/#{@key + @filetype}", @path + @filename) if method == :upload
+        sftp.download!(@path + @full_file_name, "/tmp/#{@key + @filename}") if method == :download
+        sftp.upload!("/tmp/#{@key + @filename}", @path + @full_file_name) if method == :upload
+      end
+    end
+    
+    # make sure there isn't an open file with the filename
+    def get_filename(filename,n=1)
+      if File.find_by :filename => filename
+        name = (f = filename.split('.')).first + n.to_s + @filetype
+        get_filename(name, n+=1)
+      else
+        filename
       end
     end
     
