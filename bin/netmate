@@ -18,8 +18,13 @@ else
   $config[:pass] = ''
 end
 
-$config[:host] = args.slice!(/^.+:/).delete(":")
-$config[:path] = args.split('.').last == '/' ? args : args + '/'
+if args.include?(":")
+  $config[:host] = args.slice!(/^.+:/).delete(":")
+  $config[:path] = args.split('.').last == '/' ? args : args + '/'
+else
+  $config[:host] = args
+  $config[:path] = ''
+end
 
 $cache = []
 
