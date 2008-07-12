@@ -20,8 +20,16 @@ module Netmate
             @open << (key = generate_key)
             File.new($config[:path], a, key).open
           elsif c == 'save'
-            (file = File.find_by(:filename => a)).save
-            @open.delete file.key
+            if a.empty?
+              # save all
+              @open.each do |key|
+                (file = File.find_by(:key => key)).save
+                @open.delete file.key
+              end
+            else
+              (file = File.find_by(:filename => a)).save
+              @open.delete file.key
+            end
           elsif c == 'show'
             if @open.empty?
               puts "nothing to see here people."

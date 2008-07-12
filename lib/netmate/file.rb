@@ -29,7 +29,11 @@ module Netmate
   protected
     def open_connection(method)
       Net::SFTP.start($config[:host], $config[:user], :password => $config[:pass]) do |sftp|
-        sftp.download!(@path + @full_file_name, "/tmp/#{@key + @filename}") if method == :download
+        begin
+          sftp.download!(@path + @full_file_name, "/tmp/#{@key + @filename}") if method == :download
+        rescue
+          FileUtils.touch("/tmp/#{@key + @filetype}")
+        end
         sftp.upload!("/tmp/#{@key + @filename}", @path + @full_file_name) if method == :upload
       end
     end
