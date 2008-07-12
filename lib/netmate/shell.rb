@@ -6,42 +6,48 @@ module Netmate
     end
 
     def run
-      Net::SSH.start($config[:host], $config[:user], :password => $config[:pass]) do |ssh|
-        loop do
-          cmd = Readline.readline("> ").downcase.split
-          Readline::HISTORY.push cmd.join(" ")
-          c,a = cmd.shift, cmd.join(" ") 
+      ssh = Net::SSH.start($config[:host], $config[:user], :password => $config[:pass])
+      loop do
+        cmd = Readline.readline("> ").downcase.split
+        Readline::HISTORY.push cmd.join(" ")
+        c,a = cmd.shift, cmd.join(" ")
 
-          begin
-            if c == 'exit'
-              puts 'Goodbye.'
-              exit
-            elsif c == 'mate'
-              @open << (key = generate_key)
-              File.new($config[:path], a, key).open
-            elsif c == 'save'
-              (file = File.find_by(:filename => a)).save
-              @open.delete file.key
-            elsif c == 'show'
-              if @open.empty?
-                puts "nothing to see here people."
-              else
-                @open.each do |file|
-                  print File.find_by(:key => file).filename, file == @open.last ? "\n" : ', '
-                end
-              end
-            elsif c == 'ls'
-              stdout = ""
-              ssh.exec!("#{c} #{a}") do |channel, stream, data|
-                stdout << data if stream == :stdout
-              end
-              puts stdout
+        begin
+          if c == 'exit'
+            puts 'Goodbye.'
+            exit
+          elsif c == 'mate'
+            @open << (key = generate_key)
+            File.new($config[:path], a, key).open
+          elsif c == 'save'
+            (file = File.find_by(:filename => a)).save
+            @open.delete file.key
+          elsif c == 'show'
+            if @open.empty?
+              puts "nothing to see here people."
             else
-              puts help
+              @open.each do |file|
+                print File.find_by(:key => file).filename, file == @open.last ? "\n" : ', '
+              end
             end
-          rescue => e
-            puts "#{e.class}: #{e.message}"
+          else
+            channel = ssh.exec("#{c} #{a}")
+            ssh.loop(0.1) do
+              begin
+                buf = $stdin.read_nonblock(1000)
+                channel.send_data buf
+              rescue Errno::EAGAIN
+                nil
+              rescue EOFError
+                channel.close
+              rescue => e
+                puts "#{e.class}: #{e.message}"
+              end
+              ssh.busy?
+            end
           end
+        rescue => e
+          puts "#{e.class}: #{e.message}"
         end
       end
     end
